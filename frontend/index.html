@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BuyLater — Do I Actually Need This?</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">BL</div>
+        <span class="brand-title">BuyLater</span>
+        <span class="brand-badge">AI Assistant</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html" class="active">Analyze</a></li>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="my-stuff.html">My Stuff</a></li>
+        <li><a href="history.html">History</a></li>
+        <li><a href="settings.html">Settings</a></li>
+        <li><span id="nav-personality-badge" class="personality-chip">Persona: Best Friend</span></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="hero-card">
+      <span class="hero-tag">Smart Spending Filter</span>
+      <h1 class="hero-title">Do I Actually Need This?</h1>
+      <p class="hero-sub">
+        Before you hit "Buy Now", let our Deep Learning assistant analyze your intent,
+        budget fit, and existing belongings to stop impulse regret in its tracks.
+      </p>
+
+      <!-- Input Tabs -->
+      <div class="tabs-container">
+        <div class="tabs-header">
+          <button type="button" class="tab-btn active" onclick="switchTab('url-tab')">
+            🔗 Product URL
+          </button>
+          <button type="button" class="tab-btn" onclick="switchTab('ocr-tab')">
+            📸 Screenshot OCR
+          </button>
+          <button type="button" class="tab-btn" onclick="switchTab('manual-tab')">
+            ✍️ Manual Entry
+          </button>
+        </div>
+
+        <!-- URL Tab Panel -->
+        <div id="url-tab" class="tab-panel active">
+          <form id="url-form" onsubmit="handleUrlSubmit(event)">
+            <div class="form-group">
+              <label class="form-label" for="product-url">Paste e-commerce product link</label>
+              <input 
+                type="url" 
+                id="product-url" 
+                class="form-input" 
+                placeholder="https://amazon.in/dp/... or https://flipkart.com/..." 
+                required
+              >
+            </div>
+            <button type="submit" id="url-btn" class="btn btn-primary btn-block">
+              Analyze Product URL →
+            </button>
+          </form>
+        </div>
+
+        <!-- OCR Tab Panel -->
+        <div id="ocr-tab" class="tab-panel">
+          <form id="ocr-form" onsubmit="handleOcrSubmit(event)">
+            <div class="form-group">
+              <label class="form-label">Upload product screenshot</label>
+              <div class="upload-dropzone" onclick="document.getElementById('ocr-file').click()">
+                <div class="upload-icon">📷</div>
+                <p><strong>Click to upload</strong> or drag product screenshot</p>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.4rem;">
+                  EasyOCR will extract title, price, and specs
+                </p>
+                <input 
+                  type="file" 
+                  id="ocr-file" 
+                  accept="image/png, image/jpeg, image/webp" 
+                  style="display:none;" 
+                  onchange="handleFileSelect(this)"
+                >
+              </div>
+              <p id="selected-file-name" style="margin-top:0.5rem; font-weight:600; font-size:0.85rem; color:var(--primary); text-align:center; display:none;"></p>
+            </div>
+            <button type="submit" id="ocr-btn" class="btn btn-primary btn-block" disabled>
+              Extract & Analyze Screenshot →
+            </button>
+          </form>
+        </div>
+
+        <!-- Manual Tab Panel -->
+        <div id="manual-tab" class="tab-panel">
+          <form id="manual-form" onsubmit="handleManualSubmit(event)">
+            <div class="form-group">
+              <label class="form-label" for="manual-name">Product Name *</label>
+              <input type="text" id="manual-name" class="form-input" placeholder="e.g. Sony WH-1000XM4 Noise Cancelling Headphones" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="manual-price">Price (₹) *</label>
+                <input type="number" step="0.01" id="manual-price" class="form-input" placeholder="24990" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="manual-category">Category *</label>
+                <select id="manual-category" class="form-select" required>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Fashion">Fashion & Apparel</option>
+                  <option value="Home">Home & Kitchen</option>
+                  <option value="Books">Books & Learning</option>
+                  <option value="Fitness">Fitness & Sports</option>
+                  <option value="General">General Discretionary</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="manual-desc">Notes or Description</label>
+              <textarea id="manual-desc" class="form-textarea" rows="2" placeholder="Why are you looking at this item?"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+              Proceed to Review →
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function handleFileSelect(input) {
+      const fileNameEl = document.getElementById('selected-file-name');
+      const ocrBtn = document.getElementById('ocr-btn');
+      if (input.files && input.files[0]) {
+        fileNameEl.textContent = `Selected: ${input.files[0].name}`;
+        fileNameEl.style.display = 'block';
+        ocrBtn.disabled = false;
+      }
+    }
+
+    async function handleUrlSubmit(e) {
+      e.preventDefault();
+      const url = document.getElementById('product-url').value;
+      const btn = document.getElementById('url-btn');
+      btn.disabled = true;
+      btn.textContent = 'Extracting product metadata...';
+
+      try {
+        const data = await analyzeProductUrl(url);
+        sessionStorage.setItem('extracted_product', JSON.stringify(data));
+        window.location.href = 'analyze.html';
+      } catch (err) {
+        showToast('URL extraction encountered an issue. You can enter details manually.', true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Analyze Product URL →';
+      }
+    }
+
+    async function handleOcrSubmit(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('ocr-file');
+      if (!fileInput.files[0]) return;
+
+      const btn = document.getElementById('ocr-btn');
+      btn.disabled = true;
+      btn.textContent = 'Running EasyOCR engine...';
+
+      try {
+        const data = await analyzeProductImage(fileInput.files[0]);
+        sessionStorage.setItem('extracted_product', JSON.stringify(data));
+        window.location.href = 'analyze.html';
+      } catch (err) {
+        showToast('OCR failed to extract image. Please try another image or manual entry.', true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Extract & Analyze Screenshot →';
+      }
+    }
+
+    function handleManualSubmit(e) {
+      e.preventDefault();
+      const product = {
+        name: document.getElementById('manual-name').value,
+        price: parseFloat(document.getElementById('manual-price').value),
+        category: document.getElementById('manual-category').value,
+        description: document.getElementById('manual-desc').value,
+        product_url: '',
+        image_path: '',
+        extraction_source: 'manual'
+      };
+      sessionStorage.setItem('extracted_product', JSON.stringify(product));
+      window.location.href = 'analyze.html';
+    }
+  </script>
+</body>
+</html>

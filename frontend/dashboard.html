@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spending Dashboard — BuyLater</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">BL</div>
+        <span class="brand-title">BuyLater</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html">Analyze</a></li>
+        <li><a href="dashboard.html" class="active">Dashboard</a></li>
+        <li><a href="my-stuff.html">My Stuff</a></li>
+        <li><a href="history.html">History</a></li>
+        <li><a href="settings.html">Settings</a></li>
+        <li><span id="nav-personality-badge" class="personality-chip">Persona: Best Friend</span></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <h1 style="font-size:1.8rem; font-weight:800;">Spending & Behavior Analytics</h1>
+        <p style="color:var(--text-muted); font-size:0.9rem;">Overview of your discretionary spending discipline and saved funds.</p>
+      </div>
+      <div>
+        <a href="index.html" class="btn btn-primary">+ Analyze New Product</a>
+      </div>
+    </div>
+
+    <!-- Metrics Row 1 -->
+    <div class="grid-4" style="margin-bottom:1.5rem;">
+      <div class="stat-widget">
+        <span class="stat-label">Total Avoided Savings</span>
+        <div id="dash-savings" class="stat-value" style="color:var(--accent-emerald);">₹0</div>
+        <span class="stat-sub" id="dash-avoided-count">0 purchases avoided</span>
+      </div>
+      <div class="stat-widget">
+        <span class="stat-label">Total Spending</span>
+        <div id="dash-spending" class="stat-value" style="color:var(--text-main);">₹0</div>
+        <span class="stat-sub" id="dash-total-purchases">0 completed purchases</span>
+      </div>
+      <div class="stat-widget">
+        <span class="stat-label">Average Purchase</span>
+        <div id="dash-avg-purchase" class="stat-value" style="color:var(--primary);">₹0</div>
+        <span class="stat-sub">Per discretionary item</span>
+      </div>
+      <div class="stat-widget">
+        <span class="stat-label">Impulse Rate</span>
+        <div id="dash-impulse-rate" class="stat-value" style="color:var(--accent-rose);">0%</div>
+        <span class="stat-sub">Across evaluated products</span>
+      </div>
+    </div>
+
+    <!-- AI Insights Box -->
+    <div class="card" style="border-left: 4px solid var(--primary); background: #ffffff;">
+      <h3 style="font-size:1.1rem; font-weight:800; margin-bottom:0.75rem; display:flex; align-items:center; gap:0.5rem;">
+        <span>💡 Data-Driven Spending Insights</span>
+      </h3>
+      <div id="dash-insights-list" style="display:flex; flex-direction:column; gap:0.6rem;">
+        <p style="color:var(--text-muted); font-size:0.92rem;">Loading insights from your transaction history...</p>
+      </div>
+    </div>
+
+    <!-- Grid: Recent Analyses & Purchases -->
+    <div class="grid-2">
+      <!-- Recent Analyses -->
+      <div class="card">
+        <div class="card-title">
+          <span>Recent Product Checks</span>
+          <a href="history.html" style="font-size:0.82rem; color:var(--primary); text-decoration:none; font-weight:700;">View All →</a>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Score</th>
+                <th>Rec</th>
+              </tr>
+            </thead>
+            <tbody id="recent-analyses-body">
+              <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No product analyses yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Purchases -->
+      <div class="card">
+        <div class="card-title">
+          <span>Logged Purchases</span>
+          <a href="history.html" style="font-size:0.82rem; color:var(--primary); text-decoration:none; font-weight:700;">View All →</a>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Price</th>
+                <th>Date</th>
+                <th>Satisfaction</th>
+              </tr>
+            </thead>
+            <tbody id="recent-purchases-body">
+              <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No purchases logged yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      try {
+        const d = await getDashboard();
+        renderDashboard(d);
+      } catch (err) {
+        showToast("Error loading dashboard: " + err.message, true);
+      }
+    });
+
+    function renderDashboard(data) {
+      document.getElementById("dash-savings").textContent = `₹${data.potential_savings.toLocaleString()}`;
+      document.getElementById("dash-avoided-count").textContent = `${data.purchases_avoided} items avoided`;
+
+      document.getElementById("dash-spending").textContent = `₹${data.total_spending.toLocaleString()}`;
+      document.getElementById("dash-total-purchases").textContent = `${data.total_purchases} logged purchases`;
+
+      document.getElementById("dash-avg-purchase").textContent = `₹${data.average_purchase.toLocaleString()}`;
+      document.getElementById("dash-impulse-rate").textContent = `${Math.round(data.impulse_rate * 100)}%`;
+
+      // Insights
+      const insightsBox = document.getElementById("dash-insights-list");
+      insightsBox.innerHTML = "";
+      if (data.ai_insights && data.ai_insights.length > 0) {
+        data.ai_insights.forEach(ins => {
+          const p = document.createElement("p");
+          p.style.fontSize = "0.92rem";
+          p.style.lineHeight = "1.5";
+          p.innerHTML = `<strong>•</strong> ${ins}`;
+          insightsBox.appendChild(p);
+        });
+      }
+
+      // Recent Analyses
+      const aBody = document.getElementById("recent-analyses-body");
+      if (data.recent_analyses && data.recent_analyses.length > 0) {
+        aBody.innerHTML = "";
+        data.recent_analyses.forEach(a => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td style="font-weight:600;">${a.product_name}</td>
+            <td>₹${a.price.toLocaleString()}</td>
+            <td><strong style="color:var(--primary);">${Math.round(a.purchase_score)}</strong></td>
+            <td><span class="brand-badge" style="background:#f1f5f9; color:var(--text-main); font-size:0.7rem;">${a.recommendation}</span></td>
+          `;
+          aBody.appendChild(tr);
+        });
+      }
+
+      // Recent Purchases
+      const pBody = document.getElementById("recent-purchases-body");
+      if (data.recent_purchases && data.recent_purchases.length > 0) {
+        pBody.innerHTML = "";
+        data.recent_purchases.forEach(p => {
+          const tr = document.createElement("tr");
+          const satColor = p.regret ? "var(--accent-rose)" : "var(--accent-emerald)";
+          tr.innerHTML = `
+            <td style="font-weight:600;">${p.product_name}</td>
+            <td>₹${p.price.toLocaleString()}</td>
+            <td style="color:var(--text-muted);">${p.purchase_date}</td>
+            <td style="color:${satColor}; font-weight:600;">${p.satisfaction}</td>
+          `;
+          pBody.appendChild(tr);
+        });
+      }
+    }
+  </script>
+</body>
+</html>

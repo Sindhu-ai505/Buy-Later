@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Stuff — BuyLater Inventory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">BL</div>
+        <span class="brand-title">BuyLater</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html">Analyze</a></li>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="my-stuff.html" class="active">My Stuff</a></li>
+        <li><a href="history.html">History</a></li>
+        <li><a href="settings.html">Settings</a></li>
+        <li><span id="nav-personality-badge" class="personality-chip">Persona: Best Friend</span></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <h1 style="font-size:1.8rem; font-weight:800;">My Belongings (Inventory)</h1>
+        <p style="color:var(--text-muted); font-size:0.9rem;">
+          Items listed here help the AI flag duplicate purchases and check condition before you buy new items.
+        </p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Add Item Form -->
+      <div class="card">
+        <h3 class="card-title">+ Add an Owned Item</h3>
+        <form id="add-stuff-form" onsubmit="handleAddStuff(event)">
+          <div class="form-group">
+            <label class="form-label" for="stuff-name">Product Name *</label>
+            <input type="text" id="stuff-name" class="form-input" placeholder="e.g. JBL Live 650BT Headphones" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="stuff-category">Category *</label>
+              <select id="stuff-category" class="form-select" required>
+                <option value="Electronics">Electronics</option>
+                <option value="Fashion">Fashion & Apparel</option>
+                <option value="Home">Home & Kitchen</option>
+                <option value="Books">Books & Learning</option>
+                <option value="Fitness">Fitness & Sports</option>
+                <option value="General">General</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="stuff-price">Purchase Price (₹)</label>
+              <input type="number" step="0.01" id="stuff-price" class="form-input" placeholder="6000">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="stuff-condition">Current Condition *</label>
+              <select id="stuff-condition" class="form-select" required>
+                <option value="Working">Working fine</option>
+                <option value="Minor issues">Minor issues / outdated</option>
+                <option value="Broken">Broken / unusable</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="stuff-usage">Usage Frequency *</label>
+              <select id="stuff-usage" class="form-select" required>
+                <option value="Daily">Daily</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Rarely">Rarely</option>
+                <option value="Never">Never</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="stuff-date">Purchase Date (approx)</label>
+            <input type="text" id="stuff-date" class="form-input" placeholder="e.g. Dec 2024">
+          </div>
+
+          <button type="submit" id="add-stuff-btn" class="btn btn-primary btn-block">
+            Save Item to Inventory
+          </button>
+        </form>
+      </div>
+
+      <!-- Inventory List -->
+      <div class="card">
+        <h3 class="card-title">
+          <span>Current Items</span>
+          <span id="stuff-count" class="brand-badge">0 items</span>
+        </h3>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Condition</th>
+                <th>Usage</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="stuff-table-body">
+              <tr>
+                <td colspan="4" style="text-align:center; color:var(--text-muted);">
+                  Loading items...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      loadMyStuff();
+    });
+
+    async function loadMyStuff() {
+      try {
+        const items = await getMyStuff();
+        renderStuffList(items);
+      } catch (err) {
+        showToast("Error loading My Stuff: " + err.message, true);
+      }
+    }
+
+    function renderStuffList(items) {
+      document.getElementById("stuff-count").textContent = `${items.length} items`;
+      const tbody = document.getElementById("stuff-table-body");
+      tbody.innerHTML = "";
+
+      if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No items recorded yet. Add your current electronics or gadgets!</td></tr>`;
+        return;
+      }
+
+      items.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>
+            <strong>${item.product_name}</strong><br>
+            <span style="font-size:0.75rem; color:var(--text-muted);">${item.category} • ₹${item.price.toLocaleString()}</span>
+          </td>
+          <td>
+            <span style="font-size:0.8rem; font-weight:600; color:${item.condition === 'Working' ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">
+              ${item.condition}
+            </span>
+          </td>
+          <td style="color:var(--text-muted); font-size:0.85rem;">${item.usage_frequency}</td>
+          <td>
+            <button onclick="handleDeleteStuff(${item.id})" style="background:none; border:none; color:var(--accent-rose); cursor:pointer; font-weight:700; font-size:0.85rem;">
+              Delete
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function handleAddStuff(e) {
+      e.preventDefault();
+      const btn = document.getElementById("add-stuff-btn");
+      btn.disabled = true;
+
+      const payload = {
+        product_name: document.getElementById("stuff-name").value,
+        category: document.getElementById("stuff-category").value,
+        price: parseFloat(document.getElementById("stuff-price").value || 0),
+        condition: document.getElementById("stuff-condition").value,
+        usage_frequency: document.getElementById("stuff-usage").value,
+        purchase_date: document.getElementById("stuff-date").value || null,
+      };
+
+      try {
+        await addMyStuff(payload);
+        showToast("Item added to your inventory!");
+        document.getElementById("add-stuff-form").reset();
+        await loadMyStuff();
+      } catch (err) {
+        showToast("Error adding item: " + err.message, true);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function handleDeleteStuff(id) {
+      if (!confirm("Remove this item from your inventory?")) return;
+      try {
+        await deleteMyStuff(id);
+        showToast("Item deleted");
+        await loadMyStuff();
+      } catch (err) {
+        showToast("Error deleting item: " + err.message, true);
+      }
+    }
+  </script>
+</body>
+</html>

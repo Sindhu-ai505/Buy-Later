@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review Product Details — BuyLater</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">BL</div>
+        <span class="brand-title">BuyLater</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html">Analyze</a></li>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="my-stuff.html">My Stuff</a></li>
+        <li><a href="history.html">History</a></li>
+        <li><a href="settings.html">Settings</a></li>
+        <li><span id="nav-personality-badge" class="personality-chip">Persona: Best Friend</span></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div style="max-width: 680px; margin: 0 auto;">
+      <div class="card">
+        <div class="card-title">
+          <span>Review Extracted Details</span>
+          <span id="source-badge" class="brand-badge" style="background:#f1f5f9; color:var(--text-muted);">Source: URL</span>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">
+          Please confirm or edit the extracted details before beginning your spending assessment.
+        </p>
+
+        <!-- Product Image Preview if exists -->
+        <div id="image-preview-container" style="text-align:center; margin-bottom:1.5rem; display:none;">
+          <img id="product-img" src="" alt="Product Preview" style="max-height:180px; max-width:100%; border-radius:var(--radius-md); border:1px solid var(--border-subtle); object-fit:contain;">
+        </div>
+
+        <form id="product-review-form" onsubmit="handleProceed(event)">
+          <div class="form-group">
+            <label class="form-label" for="prod-name">Product Name *</label>
+            <input type="text" id="prod-name" class="form-input" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="prod-price">Price (₹) *</label>
+              <input type="number" step="0.01" id="prod-price" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="prod-category">Category *</label>
+              <select id="prod-category" class="form-select" required>
+                <option value="Electronics">Electronics</option>
+                <option value="Fashion">Fashion & Apparel</option>
+                <option value="Home">Home & Kitchen</option>
+                <option value="Books">Books & Learning</option>
+                <option value="Fitness">Fitness & Sports</option>
+                <option value="General">General Discretionary</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="prod-brand">Brand</label>
+              <input type="text" id="prod-brand" class="form-input" placeholder="Brand name (optional)">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="prod-url">Product Link</label>
+              <input type="url" id="prod-url" class="form-input" placeholder="https://...">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="prod-desc">Description / Specs</label>
+            <textarea id="prod-desc" class="form-textarea" rows="3" placeholder="Key features or reason for interest"></textarea>
+          </div>
+
+          <div style="display:flex; gap:1rem; margin-top:2rem;">
+            <a href="index.html" class="btn btn-secondary" style="flex:1;">← Back</a>
+            <button type="submit" id="continue-btn" class="btn btn-primary" style="flex:2;">
+              Continue to Adaptive Questions →
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const raw = sessionStorage.getItem("extracted_product");
+      if (!raw) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const p = JSON.parse(raw);
+      document.getElementById("prod-name").value = p.name || "";
+      document.getElementById("prod-price").value = p.price || "";
+      document.getElementById("prod-brand").value = p.brand || "";
+      document.getElementById("prod-category").value = p.category || "General";
+      document.getElementById("prod-url").value = p.product_url || "";
+      document.getElementById("prod-desc").value = p.description || "";
+
+      const sourceBadge = document.getElementById("source-badge");
+      sourceBadge.textContent = `Source: ${(p.extraction_source || 'manual').toUpperCase()}`;
+
+      if (p.image_path) {
+        const imgEl = document.getElementById("product-img");
+        imgEl.src = p.image_path.startsWith("http") ? p.image_path : `${API_BASE}${p.image_path}`;
+        document.getElementById("image-preview-container").style.display = "block";
+      }
+    });
+
+    async function handleProceed(e) {
+      e.preventDefault();
+      const btn = document.getElementById("continue-btn");
+      btn.disabled = true;
+      btn.textContent = "Starting analysis session...";
+
+      const raw = JSON.parse(sessionStorage.getItem("extracted_product") || "{}");
+
+      const productPayload = {
+        name: document.getElementById("prod-name").value,
+        price: parseFloat(document.getElementById("prod-price").value),
+        category: document.getElementById("prod-category").value,
+        brand: document.getElementById("prod-brand").value || null,
+        product_url: document.getElementById("prod-url").value || null,
+        description: document.getElementById("prod-desc").value || null,
+        image_path: raw.image_path || null
+      };
+
+      try {
+        // 1. Create product record in DB
+        const createdProduct = await createProductManual(productPayload);
+        
+        // 2. Start analysis session
+        const analysisSession = await startAnalysis(createdProduct.id);
+        
+        // Store session IDs
+        sessionStorage.setItem("active_analysis_id", analysisSession.analysis_id);
+        sessionStorage.setItem("current_question", JSON.stringify(analysisSession.next_question));
+        sessionStorage.setItem("product_name", createdProduct.name);
+
+        window.location.href = "conversation.html";
+      } catch (err) {
+        showToast("Error creating product: " + err.message, true);
+        btn.disabled = false;
+        btn.textContent = "Continue to Adaptive Questions →";
+      }
+    }
+  </script>
+</body>
+</html>

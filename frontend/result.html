@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assessment Result — BuyLater</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">BL</div>
+        <span class="brand-title">BuyLater</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html">New Analysis</a></li>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="my-stuff.html">My Stuff</a></li>
+        <li><a href="history.html">History</a></li>
+        <li><span id="nav-personality-badge" class="personality-chip">Persona: Best Friend</span></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div style="max-width: 850px; margin: 0 auto;">
+
+      <!-- Header Product Card -->
+      <div class="card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+        <div>
+          <span style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Analyzed Item</span>
+          <h1 id="res-prod-name" style="font-size:1.5rem; font-weight:800; color:var(--text-main);">Loading...</h1>
+          <p id="res-prod-meta" style="color:var(--text-muted); font-size:0.9rem; margin-top:0.2rem;"></p>
+        </div>
+        <div>
+          <span id="recommendation-badge" class="badge-recommendation badge-consider">EVALUATING</span>
+        </div>
+      </div>
+
+      <!-- Core Scores Matrix -->
+      <div class="grid-4" style="margin-bottom: 1.5rem;">
+        <div class="stat-widget">
+          <span class="stat-label">Purchase Score</span>
+          <div id="stat-purchase-score" class="stat-value" style="color:var(--primary);">--</div>
+          <span class="stat-sub">Out of 100 max</span>
+        </div>
+        <div class="stat-widget">
+          <span class="stat-label">Impulse Risk (DL)</span>
+          <div id="stat-impulse-prob" class="stat-value" style="color:var(--accent-rose);">--</div>
+          <span class="stat-sub">Keras Neural Network</span>
+        </div>
+        <div class="stat-widget">
+          <span class="stat-label">Need Level</span>
+          <div id="stat-need-level" class="stat-value" style="color:var(--text-main);">--</div>
+          <span class="stat-sub">Functional priority</span>
+        </div>
+        <div class="stat-widget">
+          <span class="stat-label">Budget Fit</span>
+          <div id="stat-budget-score" class="stat-value" style="color:var(--accent-emerald);">--</div>
+          <span class="stat-sub">Affordability index</span>
+        </div>
+      </div>
+
+      <!-- Personality Explanation Box -->
+      <div class="personality-box">
+        <div class="personality-header">
+          <span>💬 Advice from your <strong id="persona-title">Best Friend</strong>:</span>
+        </div>
+        <div id="persona-explanation" class="personality-text">
+          Loading personalized assessment...
+        </div>
+      </div>
+
+      <!-- Similar Items Warning if found -->
+      <div id="similar-items-card" class="card" style="display:none; border-left:4px solid var(--accent-amber); background:#fffbeb;">
+        <h3 style="font-weight:800; font-size:1.05rem; color:#b45309; margin-bottom:0.5rem;">⚠️ Similar Product Found in 'My Stuff'</h3>
+        <p id="similar-items-desc" style="font-size:0.92rem; color:#92400e;"></p>
+      </div>
+
+      <!-- Detailed Factors Grid -->
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="font-weight:800; font-size:1.05rem; margin-bottom:1rem; color:#15803d;">
+            ✓ Positive Factors
+          </h3>
+          <ul id="positive-factors-list" style="padding-left:1.25rem; font-size:0.92rem; line-height:1.7; color:var(--text-main);">
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3 style="font-weight:800; font-size:1.05rem; margin-bottom:1rem; color:#b91c1c;">
+            ⚠ Cautionary Reasons
+          </h3>
+          <ul id="reasons-list" style="padding-left:1.25rem; font-size:0.92rem; line-height:1.7; color:var(--text-main);">
+          </ul>
+        </div>
+      </div>
+
+      <!-- Interactive Decision Actions -->
+      <div class="card" style="text-align:center; padding:2rem 1.5rem;">
+        <h3 style="font-weight:800; font-size:1.2rem; margin-bottom:0.5rem;">Take Action on this Purchase</h3>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">
+          Take a moment to cool off or challenge the AI recommendation.
+        </p>
+
+        <div style="display:flex; justify-content:center; gap:1rem; flex-wrap:wrap;">
+          <button type="button" class="btn btn-secondary" onclick="openChallengeModal()">
+            ⚖️ Challenge My Decision
+          </button>
+          <button type="button" class="btn btn-accent" onclick="handleWait7Days()">
+            ⏳ Wait 7 Days (Cooling Off)
+          </button>
+          <button type="button" class="btn btn-primary" onclick="openFeedbackModal(true)">
+            🛍️ I Bought It
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="handleDidNotBuy()">
+            🚫 Decided Not to Buy
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Challenge Modal -->
+  <div id="challenge-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; align-items:center; justify-content:center;">
+    <div class="card" style="max-width:550px; width:90%; max-height:85vh; overflow-y:auto; position:relative;">
+      <h3 id="challenge-title" style="font-weight:800; margin-bottom:1rem;">The Devil's Advocate</h3>
+      <div id="challenge-body" style="font-size:0.95rem; line-height:1.6; white-space:pre-line; margin-bottom:1.5rem; color:var(--text-main);">
+        Loading arguments...
+      </div>
+      <button type="button" class="btn btn-secondary btn-block" onclick="closeChallengeModal()">Close</button>
+    </div>
+  </div>
+
+  <!-- Feedback Modal -->
+  <div id="feedback-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; align-items:center; justify-content:center;">
+    <div class="card" style="max-width:480px; width:90%; position:relative;">
+      <h3 style="font-weight:800; margin-bottom:0.5rem;">Purchase Follow-up</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1.25rem;">
+        How satisfied do you feel with this purchase decision right now?
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Satisfaction Level</label>
+        <select id="fb-satisfaction" class="form-select">
+          <option value="Very satisfied">Very satisfied 😊</option>
+          <option value="Satisfied">Satisfied 🙂</option>
+          <option value="Neutral">Neutral 😐</option>
+          <option value="Regret">Regret 😕</option>
+          <option value="Strong regret">Strong regret 😣</option>
+        </select>
+      </div>
+
+      <div style="display:flex; gap:1rem;">
+        <button type="button" class="btn btn-secondary" style="flex:1;" onclick="closeFeedbackModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" style="flex:1;" onclick="submitPurchaseFeedback()">Submit Feedback</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    let activeAnalysisId = null;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      activeAnalysisId = sessionStorage.getItem("active_analysis_id");
+      if (!activeAnalysisId) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      try {
+        const res = await getAnalysisResult(activeAnalysisId);
+        renderResult(res);
+      } catch (err) {
+        showToast("Error retrieving result: " + err.message, true);
+      }
+    });
+
+    function renderResult(data) {
+      document.getElementById("res-prod-name").textContent = data.product.name;
+      document.getElementById("res-prod-meta").textContent = 
+        `₹${data.product.price.toLocaleString()} • Category: ${data.product.category}`;
+
+      // Badge style
+      const badgeEl = document.getElementById("recommendation-badge");
+      badgeEl.textContent = data.recommendation;
+      badgeEl.className = "badge-recommendation";
+      if (data.recommendation === "BUY NOW") badgeEl.classList.add("badge-buynow");
+      else if (data.recommendation === "CONSIDER") badgeEl.classList.add("badge-consider");
+      else if (data.recommendation === "WAIT 7 DAYS") badgeEl.classList.add("badge-wait7days");
+      else badgeEl.classList.add("badge-dontbuy");
+
+      // Core widgets
+      document.getElementById("stat-purchase-score").textContent = `${Math.round(data.purchase_score)}`;
+      document.getElementById("stat-impulse-prob").textContent = `${Math.round(data.impulse_probability * 100)}%`;
+      document.getElementById("stat-need-level").textContent = data.need_level;
+      document.getElementById("stat-budget-score").textContent = `${Math.round(data.budget_score)}`;
+
+      // Persona explanation
+      document.getElementById("persona-title").textContent = data.personality;
+      document.getElementById("persona-explanation").textContent = data.personality_explanation;
+
+      // Positive & negative factors
+      const posList = document.getElementById("positive-factors-list");
+      posList.innerHTML = "";
+      data.positive_factors.forEach(p => {
+        const li = document.createElement("li");
+        li.textContent = p;
+        posList.appendChild(li);
+      });
+
+      const reasList = document.getElementById("reasons-list");
+      reasList.innerHTML = "";
+      data.reasons.forEach(r => {
+        const li = document.createElement("li");
+        li.textContent = r;
+        reasList.appendChild(li);
+      });
+
+      // Similar items
+      if (data.similar_owned_items && data.similar_owned_items.length > 0) {
+        const simCard = document.getElementById("similar-items-card");
+        const simDesc = document.getElementById("similar-items-desc");
+        simDesc.textContent = data.similar_owned_items[0].explanation;
+        simCard.style.display = "block";
+      }
+    }
+
+    async function openChallengeModal() {
+      const modal = document.getElementById("challenge-modal");
+      modal.style.display = "flex";
+      try {
+        const ch = await challengeDecision(activeAnalysisId);
+        document.getElementById("challenge-title").textContent = ch.challenge_title;
+        document.getElementById("challenge-body").textContent = ch.challenge_text;
+      } catch (err) {
+        document.getElementById("challenge-body").textContent = "Could not assemble challenge arguments: " + err.message;
+      }
+    }
+
+    function closeChallengeModal() {
+      document.getElementById("challenge-modal").style.display = "none";
+    }
+
+    async function handleWait7Days() {
+      try {
+        await initiateWaitRecord(activeAnalysisId, 7);
+        showToast("7-Day Cooling Off period started! Added to your History.");
+        setTimeout(() => {
+          window.location.href = "history.html";
+        }, 1200);
+      } catch (err) {
+        showToast("Error initiating wait record: " + err.message, true);
+      }
+    }
+
+    function openFeedbackModal(isPurchased) {
+      document.getElementById("feedback-modal").style.display = "flex";
+    }
+
+    function closeFeedbackModal() {
+      document.getElementById("feedback-modal").style.display = "none";
+    }
+
+    async function submitPurchaseFeedback() {
+      const sat = document.getElementById("fb-satisfaction").value;
+      const isRegret = sat === "Regret" || sat === "Strong regret";
+      try {
+        await submitFeedback(activeAnalysisId, true, sat, isRegret);
+        closeFeedbackModal();
+        showToast("Purchase recorded! Redirecting to Dashboard...");
+        setTimeout(() => {
+          window.location.href = "dashboard.html";
+        }, 1200);
+      } catch (err) {
+        showToast("Error saving feedback: " + err.message, true);
+      }
+    }
+
+    async function handleDidNotBuy() {
+      try {
+        await submitFeedback(activeAnalysisId, false, "Did not buy", false);
+        showToast("Awesome! Purchase avoided. Savings added to your dashboard!");
+        setTimeout(() => {
+          window.location.href = "dashboard.html";
+        }, 1200);
+      } catch (err) {
+        showToast("Error updating status: " + err.message, true);
+      }
+    }
+  </script>
+</body>
+</html>

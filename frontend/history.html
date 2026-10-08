@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>History & Cooling-Off Logs — BuyLater</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">BL</div>
+        <span class="brand-title">BuyLater</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html">Analyze</a></li>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="my-stuff.html">My Stuff</a></li>
+        <li><a href="history.html" class="active">History</a></li>
+        <li><a href="settings.html">Settings</a></li>
+        <li><span id="nav-personality-badge" class="personality-chip">Persona: Best Friend</span></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div style="margin-bottom:1.5rem;">
+      <h1 style="font-size:1.8rem; font-weight:800;">Assessment History & Decisions</h1>
+      <p style="color:var(--text-muted); font-size:0.9rem;">
+        Review previous product evaluations, cooling-off timers, and post-purchase satisfaction.
+      </p>
+    </div>
+
+    <!-- Active Cooling-Off Items Card -->
+    <div class="card" style="border-left:4px solid var(--primary); margin-bottom:1.5rem;">
+      <div class="card-title">
+        <span>⏳ 7-Day Cooling-Off Items</span>
+        <span id="wait-count" class="brand-badge">0 active</span>
+      </div>
+      <div id="wait-items-container">
+        <p style="color:var(--text-muted); font-size:0.9rem;">No active cooling-off items right now.</p>
+      </div>
+    </div>
+
+    <!-- Analyses & Purchases Grid -->
+    <div class="card">
+      <h3 class="card-title">All Product Assessments</h3>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Score</th>
+              <th>Recommendation</th>
+              <th>Impulse Risk</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="analyses-table-body">
+            <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      loadHistory();
+    });
+
+    async function loadHistory() {
+      try {
+        const dash = await getDashboard();
+        renderAnalyses(dash.recent_analyses);
+
+        // Fetch wait records for recent analyses
+        const waitContainer = document.getElementById("wait-items-container");
+        waitContainer.innerHTML = "";
+        let activeWaitCount = 0;
+
+        for (const a of dash.recent_analyses) {
+          try {
+            const waitInfo = await getWaitStatus(a.id);
+            if (waitInfo.exists) {
+              activeWaitCount++;
+              renderWaitCard(a, waitInfo, waitContainer);
+            }
+          } catch (e) {
+            // No wait record for this analysis
+          }
+        }
+
+        document.getElementById("wait-count").textContent = `${activeWaitCount} tracked`;
+        if (activeWaitCount === 0) {
+          waitContainer.innerHTML = `<p style="color:var(--text-muted); font-size:0.9rem;">No cooling-off records waiting for evaluation.</p>`;
+        }
+      } catch (err) {
+        showToast("Error loading history: " + err.message, true);
+      }
+    }
+
+    function renderWaitCard(analysis, wait, container) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.background = "#f8fafc";
+      card.style.marginBottom = "0.75rem";
+      card.style.padding = "1rem 1.25rem";
+
+      const decisionText = wait.final_decision 
+        ? `<span style="font-weight:700; color:var(--primary);">Final Decision: ${wait.final_decision}</span>`
+        : `
+          <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+            <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="handleWaitDecision(${analysis.id}, 'Bought')">I Decided to Buy</button>
+            <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="handleWaitDecision(${analysis.id}, 'Did not buy')">Avoided Purchase</button>
+          </div>
+        `;
+
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <strong>${analysis.product_name}</strong> (₹${analysis.price.toLocaleString()})<br>
+            <span style="font-size:0.8rem; color:var(--text-muted);">
+              Started: ${new Date(wait.start_date).toLocaleDateString()} • Scheduled Re-check: ${new Date(wait.recheck_date).toLocaleDateString()}
+            </span>
+          </div>
+          <div>
+            ${wait.is_ready_for_recheck 
+              ? `<span class="brand-badge" style="background:#dcfce7; color:#15803d;">Ready for Decision!</span>` 
+              : `<span class="brand-badge" style="background:#e0e7ff; color:var(--primary);">${wait.days_remaining} days cooling off</span>`}
+          </div>
+        </div>
+        ${decisionText}
+      `;
+      container.appendChild(card);
+    }
+
+    async function handleWaitDecision(analysisId, decision) {
+      try {
+        await submitWaitDecision(analysisId, decision);
+        showToast(`Decision recorded: ${decision}`);
+        await loadHistory();
+      } catch (err) {
+        showToast("Error recording wait decision: " + err.message, true);
+      }
+    }
+
+    function renderAnalyses(analyses) {
+      const tbody = document.getElementById("analyses-table-body");
+      tbody.innerHTML = "";
+
+      if (!analyses || analyses.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No product evaluations recorded yet.</td></tr>`;
+        return;
+      }
+
+      analyses.forEach(a => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="color:var(--text-muted); font-size:0.85rem;">${a.created_at}</td>
+          <td><strong>${a.product_name}</strong></td>
+          <td>₹${a.price.toLocaleString()}</td>
+          <td><strong style="color:var(--primary);">${Math.round(a.purchase_score)}/100</strong></td>
+          <td><span class="brand-badge" style="background:#f1f5f9; color:var(--text-main);">${a.recommendation}</span></td>
+          <td style="color:var(--accent-rose); font-weight:600;">${Math.round(a.impulse_probability * 100)}%</td>
+          <td>
+            <button onclick="viewAnalysisResult(${a.id})" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.8rem;">
+              View →
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function viewAnalysisResult(id) {
+      sessionStorage.setItem("active_analysis_id", id);
+      window.location.href = "result.html";
+    }
+  </script>
+</body>
+</html>

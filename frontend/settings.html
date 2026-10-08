@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings & Personality — BuyLater</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .persona-card {
+      border: 2px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #ffffff;
+    }
+    .persona-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+    .persona-card.selected {
+      border-color: var(--primary);
+      background: #f5f3ff;
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">BL</div>
+        <span class="brand-title">BuyLater</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html">Analyze</a></li>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="my-stuff.html">My Stuff</a></li>
+        <li><a href="history.html">History</a></li>
+        <li><a href="settings.html" class="active">Settings</a></li>
+        <li><span id="nav-personality-badge" class="personality-chip">Persona: Best Friend</span></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div style="max-width: 780px; margin: 0 auto;">
+      <div style="margin-bottom:1.5rem;">
+        <h1 style="font-size:1.8rem; font-weight:800;">Preferences & Persona</h1>
+        <p style="color:var(--text-muted); font-size:0.9rem;">
+          Customize how BuyLater speaks with you and adjust your monthly spending budget.
+        </p>
+      </div>
+
+      <!-- Financial Profile -->
+      <div class="card">
+        <h3 class="card-title">Monthly Discretionary Budget</h3>
+        <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1rem;">
+          This target budget determines how product prices impact your affordability and budget fit score.
+        </p>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="user-budget">Monthly Discretionary Budget (₹)</label>
+            <input type="number" id="user-budget" class="form-input" placeholder="25000">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="user-name">User Display Name</label>
+            <input type="text" id="user-name" class="form-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+
+      <!-- Personality Selector -->
+      <div class="card">
+        <div class="card-title">
+          <span>Choose Assistant Personality Voice</span>
+          <span class="brand-badge">Tone Only — Never Alters Scores</span>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.25rem;">
+          Select whose voice you want in your ear before pressing buy:
+        </p>
+
+        <div class="grid-2" id="persona-cards-container">
+          <!-- Best Friend -->
+          <div class="persona-card selected" data-persona="Best Friend" onclick="selectPersona(this)">
+            <h4 style="font-weight:800; font-size:1rem; margin-bottom:0.35rem;">🤝 Best Friend</h4>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.5rem;">Candid, funny, keeps it 100% real without sugarcoating.</p>
+            <div style="font-size:0.8rem; font-style:italic; background:#ffffff; padding:0.5rem; border-radius:6px; border:1px solid #e2e8f0;">
+              "Bro, be honest 😂! Don't let late-night flash sales fool you. Let's wait 7 days."
+            </div>
+          </div>
+
+          <!-- Spouse -->
+          <div class="persona-card" data-persona="Spouse" onclick="selectPersona(this)">
+            <h4 style="font-weight:800; font-size:1rem; margin-bottom:0.35rem;">💍 Spouse</h4>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.5rem;">Loving, shared-future focus, balanced partnership.</p>
+            <div style="font-size:0.8rem; font-style:italic; background:#ffffff; padding:0.5rem; border-radius:6px; border:1px solid #e2e8f0;">
+              "Let's put this in the cooling-off jar, sweetheart. Does this align with our goals?"
+            </div>
+          </div>
+
+          <!-- Parent -->
+          <div class="persona-card" data-persona="Parent" onclick="selectPersona(this)">
+            <h4 style="font-weight:800; font-size:1rem; margin-bottom:0.35rem;">👴 Parent</h4>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.5rem;">Caring, wise, protective of hard-earned money.</p>
+            <div style="font-size:0.8rem; font-style:italic; background:#ffffff; padding:0.5rem; border-radius:6px; border:1px solid #e2e8f0;">
+              "Sleep on it for 7 days. If it's a real necessity, waiting one week won't hurt at all."
+            </div>
+          </div>
+
+          <!-- Child -->
+          <div class="persona-card" data-persona="Child" onclick="selectPersona(this)">
+            <h4 style="font-weight:800; font-size:1rem; margin-bottom:0.35rem;">🎈 Child</h4>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.5rem;">Playful, enthusiastic, innocent perspective.</p>
+            <div style="font-size:0.8rem; font-style:italic; background:#ffffff; padding:0.5rem; border-radius:6px; border:1px solid #e2e8f0;">
+              "Can we make a secret countdown for 7 days? If you still want it, we can buy it!"
+            </div>
+          </div>
+
+          <!-- Sibling -->
+          <div class="persona-card" data-persona="Sibling" onclick="selectPersona(this)">
+            <h4 style="font-weight:800; font-size:1rem; margin-bottom:0.35rem;">😏 Sibling</h4>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.5rem;">Sarcastic, teasing, catches you red-handed.</p>
+            <div style="font-size:0.8rem; font-style:italic; background:#ffffff; padding:0.5rem; border-radius:6px; border:1px solid #e2e8f0;">
+              "Classic impulse move! 💀 You definitely don't need this. Save your money."
+            </div>
+          </div>
+
+          <!-- Professional Advisor -->
+          <div class="persona-card" data-persona="Professional Advisor" onclick="selectPersona(this)">
+            <h4 style="font-weight:800; font-size:1rem; margin-bottom:0.35rem;">💼 Professional Advisor</h4>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.5rem;">Analytical, formal, focused on capital preservation.</p>
+            <div style="font-size:0.8rem; font-style:italic; background:#ffffff; padding:0.5rem; border-radius:6px; border:1px solid #e2e8f0;">
+              "A mandatory 7-day cooling-off protocol is recommended to mitigate cognitive biases."
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:1.5rem;">
+          <button type="button" id="save-settings-btn" class="btn btn-primary btn-block" onclick="saveSettings()">
+            Save Preferences
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    let selectedPersona = "Best Friend";
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      try {
+        const user = await getUser();
+        document.getElementById("user-budget").value = user.monthly_budget;
+        document.getElementById("user-name").value = user.name;
+        selectedPersona = user.personality || "Best Friend";
+
+        document.querySelectorAll(".persona-card").forEach(c => {
+          if (c.getAttribute("data-persona") === selectedPersona) {
+            c.classList.add("selected");
+          } else {
+            c.classList.remove("selected");
+          }
+        });
+      } catch (e) {
+        // Fallback
+      }
+    });
+
+    function selectPersona(cardEl) {
+      document.querySelectorAll(".persona-card").forEach(c => c.classList.remove("selected"));
+      cardEl.classList.add("selected");
+      selectedPersona = cardEl.getAttribute("data-persona");
+    }
+
+    async function saveSettings() {
+      const btn = document.getElementById("save-settings-btn");
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+
+      try {
+        // 1. Update personality
+        await updateUserPersonality(selectedPersona);
+
+        showToast("Settings and Personality updated successfully!");
+        const chip = document.getElementById("nav-personality-badge");
+        if (chip) chip.textContent = `Persona: ${selectedPersona}`;
+      } catch (err) {
+        showToast("Error updating settings: " + err.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Save Preferences";
+      }
+    }
+  </script>
+</body>
+</html>
