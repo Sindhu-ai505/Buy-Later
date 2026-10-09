@@ -76,6 +76,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_no_cache_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/app"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 # Mount Uploads directory
 uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../uploads"))
 os.makedirs(uploads_dir, exist_ok=True)
