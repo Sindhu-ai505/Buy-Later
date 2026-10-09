@@ -27,12 +27,33 @@ def get_ocr_reader():
     return _easyocr_reader
 
 
+def infer_category(text: str) -> str:
+    """Infers product category from title keywords."""
+    t = text.lower()
+    if any(k in t for k in ["phone", "laptop", "headphone", "earphone", "tablet", "watch", "camera", "charger", "monitor", "speaker", "bluetooth", "tv", "mouse", "keyboard"]):
+        return "Electronics"
+    if any(k in t for k in ["shirt", "t-shirt", "jeans", "dress", "jacket", "hoodie", "pants", "kurta", "saree", "sweater", "clothing"]):
+        return "Clothing"
+    if any(k in t for k in ["shoe", "sneaker", "boot", "sandal", "slipper", "footwear"]):
+        return "Footwear"
+    if any(k in t for k in ["book", "novel", "textbook", "hardcover", "paperback"]):
+        return "Books"
+    if any(k in t for k in ["cookware", "pan", "bottle", "knife", "lamp", "curtain", "pillow", "bedsheet", "kitchen", "sofa", "chair", "blender", "kettle"]):
+        return "Home & Kitchen"
+    if any(k in t for k in ["dumbbell", "yoga", "gym", "treadmill", "cycle", "protein", "fitness"]):
+        return "Fitness"
+    if any(k in t for k in ["serum", "cream", "shampoo", "perfume", "lipstick", "lotion", "sunscreen", "skincare"]):
+        return "Beauty"
+    return "General"
+
+
 def extract_from_url(url: str) -> Dict[str, Any]:
     """
     Extracts product name, price, image, and description from a URL.
-    Best-effort extraction using Open Graph, standard meta tags, and JSON-LD.
-    If fields cannot be found, leaves them clear for user confirmation.
+    Robust extraction with store selectors, Open Graph, JSON-LD, and URL-slug fallbacks.
     """
+    from urllib.parse import urlparse, unquote
+
     result = {
         "name": "",
         "brand": "",
@@ -49,81 +70,144 @@ def extract_from_url(url: str) -> Dict[str, Any]:
     try:
         headers = {
             "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            )
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            ),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Upgrade-Insecure-Requests": "1",
         }
-        resp = requests.get(url, headers=headers, timeout=8)
-        if resp.status_code != 200:
-            result["description"] = f"URL returned status code {resp.status_code}. Please verify and enter details manually."
-            return result
+        resp = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
+        soup = BeautifulSoup(resp.content, "html.parser") if resp.status_code == 200 else None
 
-        soup = BeautifulSoup(resp.content, "html.parser")
+        if soup:
+            # 1. Product Name: Check e-commerce specific IDs first
+            amz_title = soup.find("span", id="productTitle") or soup.find("h1", id="title")
+            fk_title = soup.find("h1", class_=re.compile(r"(_6EBuvT|VU-ZEz|B_NuCI)"))
+            og_title = soup.find("meta", property="og:title")
+            twitter_title = soup.find("meta", attrs={"name": "twitter:title"})
+            meta_title = soup.find("meta", attrs={"name": "title"})
+            title_tag = soup.find("title")
 
-        # 1. Title / Name
-        og_title = soup.find("meta", property="og:title")
-        twitter_title = soup.find("meta", attrs={"name": "twitter:title"})
-        title_tag = soup.find("title")
+            if amz_title and amz_title.get_text(strip=True):
+                result["name"] = amz_title.get_text(strip=True)
+            elif fk_title and fk_title.get_text(strip=True):
+                result["name"] = fk_title.get_text(strip=True)
+            elif og_title and og_title.get("content"):
+                result["name"] = og_title["content"].strip()
+            elif twitter_title and twitter_title.get("content"):
+                result["name"] = twitter_title["content"].strip()
+            elif meta_title and meta_title.get("content"):
+                result["name"] = meta_title["content"].strip()
+            elif title_tag and title_tag.string:
+                result["name"] = title_tag.string.strip()
 
-        if og_title and og_title.get("content"):
-            result["name"] = og_title["content"].strip()
-        elif twitter_title and twitter_title.get("content"):
-            result["name"] = twitter_title["content"].strip()
-        elif title_tag and title_tag.string:
-            result["name"] = title_tag.string.strip()
+            # 2. Image
+            amz_img = soup.find("img", id=re.compile(r"(landingImage|imgBlkFront)"))
+            fk_img = soup.find("img", class_=re.compile(r"(_396cs4|DByuf4)"))
+            og_image = soup.find("meta", property="og:image")
+            if amz_img and amz_img.get("src"):
+                result["image_path"] = amz_img["src"].strip()
+            elif fk_img and fk_img.get("src"):
+                result["image_path"] = fk_img["src"].strip()
+            elif og_image and og_image.get("content"):
+                result["image_path"] = og_image["content"].strip()
 
-        # 2. Image
-        og_image = soup.find("meta", property="og:image")
-        if og_image and og_image.get("content"):
-            result["image_path"] = og_image["content"].strip()
+            # 3. Description
+            og_desc = soup.find("meta", property="og:description")
+            meta_desc = soup.find("meta", attrs={"name": "description"})
+            if og_desc and og_desc.get("content"):
+                result["description"] = og_desc["content"].strip()
+            elif meta_desc and meta_desc.get("content"):
+                result["description"] = meta_desc["content"].strip()
 
-        # 3. Description
-        og_desc = soup.find("meta", property="og:description")
-        meta_desc = soup.find("meta", attrs={"name": "description"})
-        if og_desc and og_desc.get("content"):
-            result["description"] = og_desc["content"].strip()
-        elif meta_desc and meta_desc.get("content"):
-            result["description"] = meta_desc["content"].strip()
-
-        # 4. Price & Brand from JSON-LD
-        for script in soup.find_all("script", type="application/ld+json"):
-            try:
-                if not script.string:
-                    continue
-                data = json.loads(script.string)
-                if isinstance(data, list):
-                    data = data[0]
-
-                if isinstance(data, dict):
-                    # Check Product schema
-                    if data.get("@type") == "Product":
-                        if not result["name"] and data.get("name"):
-                            result["name"] = str(data["name"])
-                        if data.get("brand"):
-                            brand_val = data["brand"]
-                            result["brand"] = brand_val.get("name", "") if isinstance(brand_val, dict) else str(brand_val)
-
-                        offers = data.get("offers")
-                        if isinstance(offers, dict) and "price" in offers:
-                            result["price"] = float(offers["price"])
-                        elif isinstance(offers, list) and offers and "price" in offers[0]:
-                            result["price"] = float(offers[0]["price"])
-            except Exception:
-                pass
-
-        # 5. Price from meta tags if not already found
-        if result["price"] == 0.0:
-            price_meta = soup.find("meta", property="product:price:amount")
-            if price_meta and price_meta.get("content"):
+            # 4. JSON-LD structured data
+            for script in soup.find_all("script", type="application/ld+json"):
                 try:
-                    result["price"] = float(re.sub(r"[^\d.]", "", price_meta["content"]))
-                except ValueError:
+                    if not script.string:
+                        continue
+                    data = json.loads(script.string)
+                    if isinstance(data, list):
+                        data = data[0]
+                    if isinstance(data, dict):
+                        if data.get("@type") == "Product":
+                            if not result["name"] and data.get("name"):
+                                result["name"] = str(data["name"]).strip()
+                            if data.get("brand"):
+                                brand_val = data["brand"]
+                                result["brand"] = brand_val.get("name", "") if isinstance(brand_val, dict) else str(brand_val)
+                            offers = data.get("offers")
+                            if isinstance(offers, dict) and "price" in offers:
+                                result["price"] = float(re.sub(r"[^\d.]", "", str(offers["price"])))
+                            elif isinstance(offers, list) and offers and "price" in offers[0]:
+                                result["price"] = float(re.sub(r"[^\d.]", "", str(offers[0]["price"])))
+                except Exception:
                     pass
 
-        # Clean name if it has long site suffixes like " | Amazon.in"
+            # 5. Price from meta tags or classes
+            if result["price"] == 0.0:
+                price_meta = soup.find("meta", property="product:price:amount") or soup.find("meta", attrs={"name": "twitter:data1"})
+                if price_meta and price_meta.get("content"):
+                    try:
+                        clean_p = re.sub(r"[^\d.]", "", price_meta["content"])
+                        if clean_p:
+                            result["price"] = float(clean_p)
+                    except ValueError:
+                        pass
+
+            if result["price"] == 0.0:
+                amz_price = soup.find("span", class_="a-price-whole") or soup.find("span", class_="a-offscreen")
+                fk_price = soup.find("div", class_=re.compile(r"(_30jeq3|Nx9bqj)"))
+                if amz_price and amz_price.get_text(strip=True):
+                    clean_p = re.sub(r"[^\d.]", "", amz_price.get_text(strip=True))
+                    if clean_p:
+                        try:
+                            result["price"] = float(clean_p)
+                        except ValueError:
+                            pass
+                elif fk_price and fk_price.get_text(strip=True):
+                    clean_p = re.sub(r"[^\d.]", "", fk_price.get_text(strip=True))
+                    if clean_p:
+                        try:
+                            result["price"] = float(clean_p)
+                        except ValueError:
+                            pass
+
+        # 6. Fallback: If name was not found or is a generic site/bot-block title, extract from URL slug
+        generic_titles = [
+            "amazon", "amazon.in", "flipkart", "robot check", "just a moment...",
+            "blocked", "access denied", "page not found", "404", "security check",
+            "online shopping", "myntra", "sign in"
+        ]
+        is_invalid_name = (
+            not result["name"] 
+            or any(result["name"].lower().strip().startswith(g) for g in generic_titles)
+            or len(result["name"].strip()) < 3
+        )
+
+        if is_invalid_name:
+            path = unquote(urlparse(url).path)
+            parts = [p for p in path.split("/") if p and not re.match(r"^(dp|p|gp|product|item|itm.*|B0[0-9A-Z]+)$", p, re.I)]
+            if parts:
+                slug = parts[0]
+                slug_name = re.sub(r"[-_+]+", " ", slug).strip().title()
+                if len(slug_name) >= 3 and not slug_name.isdigit():
+                    result["name"] = slug_name
+
+        # Clean site suffixes from name
         if result["name"]:
-            cleaned_name = re.split(r"\s*[-|–]\s*(Amazon|Flipkart|Myntra|eBay|Walmart)", result["name"])[0]
+            cleaned_name = re.split(r"\s*[-|–:]\s*(Amazon|Flipkart|Myntra|eBay|Walmart|Shop)", result["name"], flags=re.I)[0]
             result["name"] = cleaned_name.strip()
+            result["category"] = infer_category(result["name"])
+
+        # Infer brand if not found
+        if not result["brand"] and result["name"]:
+            first_word = result["name"].split()[0]
+            if len(first_word) >= 2 and first_word.isalpha():
+                result["brand"] = first_word
 
     except Exception as e:
         result["description"] = f"Extraction note: Could not parse URL fully ({str(e)}). Please review the fields."

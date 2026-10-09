@@ -3,10 +3,10 @@
  * Connects vanilla JS pages with the FastAPI backend.
  */
 
-// Dynamically determine API base URL (works whether opened on port 8000 or file/live-server)
-const API_BASE = window.location.port === "8000" 
+// Dynamically determine API base URL (works across localhost:10000, localhost:8000, or Render domain)
+const API_BASE = (window.location.origin && window.location.origin.startsWith("http"))
   ? window.location.origin 
-  : "http://127.0.0.1:8000";
+  : "http://127.0.0.1:10000";
 
 // Default active user ID (Demo user seeded on startup: 1)
 const CURRENT_USER_ID = 1;
