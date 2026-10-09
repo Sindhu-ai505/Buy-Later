@@ -158,7 +158,10 @@
 
     async function handleUrlSubmit(e) {
       e.preventDefault();
-      const url = document.getElementById('product-url').value;
+      let url = document.getElementById('product-url').value.trim();
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
       const btn = document.getElementById('url-btn');
       btn.disabled = true;
       btn.textContent = 'Extracting product metadata...';
@@ -168,7 +171,22 @@
         sessionStorage.setItem('extracted_product', JSON.stringify(data));
         window.location.href = 'analyze.html';
       } catch (err) {
-        showToast('URL extraction encountered an issue. You can enter details manually.', true);
+        console.warn('URL auto-extraction note:', err);
+        // Fallback: create draft with URL so user is never stuck
+        const fallback = {
+          name: '',
+          price: 0,
+          category: 'General',
+          brand: '',
+          product_url: url,
+          description: '',
+          extraction_source: 'url'
+        };
+        sessionStorage.setItem('extracted_product', JSON.stringify(fallback));
+        showToast('Site blocked auto-scraping. Proceeding to review page to verify details...', false);
+        setTimeout(() => {
+          window.location.href = 'analyze.html';
+        }, 800);
       } finally {
         btn.disabled = false;
         btn.textContent = 'Analyze Product URL →';

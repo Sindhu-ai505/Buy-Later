@@ -3,42 +3,63 @@
  * Connects vanilla JS pages with the FastAPI backend.
  */
 
-// Use relative URL when loaded over http/https to guarantee origin and port match
-const API_BASE = (window.location && window.location.protocol && window.location.protocol.startsWith("http"))
-  ? "" 
-  : "http://127.0.0.1:10000";
+// Determine active base URL with intelligent fallback
+function getDefaultApiBase() {
+  if (window.location && window.location.protocol && window.location.protocol.startsWith("http") && window.location.pathname.includes("/app")) {
+    return "";
+  }
+  return "http://127.0.0.1:10000";
+}
+
+let CURRENT_API_BASE = getDefaultApiBase();
 
 // Default active user ID (Demo user seeded on startup: 1)
 const CURRENT_USER_ID = 1;
 
-/** Generic fetch helper with JSON error handling */
+/** Generic fetch helper with JSON error handling and multi-target fallback */
 async function apiRequest(endpoint, options = {}) {
-  try {
-    const url = `${API_BASE}${endpoint}`;
-    // Attach bypass header for tunnel environments
-    const headers = {
-      ...(options.headers || {}),
-      "Bypass-Tunnel-Reminder": "true",
-    };
-    const response = await fetch(url, { ...options, headers });
+  const candidateBases = [
+    CURRENT_API_BASE,
+    "",
+    "http://127.0.0.1:10000",
+    "http://127.0.0.1:8000"
+  ];
+  const uniqueBases = [...new Set(candidateBases)];
+  let lastError = null;
 
-    if (!response.ok) {
-      let errDetail = `HTTP ${response.status}`;
-      try {
-        const errorData = await response.json();
-        errDetail = errorData.detail || errDetail;
-      } catch (e) {
-        errDetail = await response.text();
+  for (const base of uniqueBases) {
+    try {
+      const url = `${base}${endpoint}`;
+      const headers = {
+        ...(options.headers || {}),
+        "Bypass-Tunnel-Reminder": "true",
+      };
+      const response = await fetch(url, { ...options, headers });
+
+      if (!response.ok) {
+        let errDetail = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errDetail = errorData.detail || errDetail;
+        } catch (e) {
+          errDetail = await response.text();
+        }
+        throw new Error(errDetail);
       }
-      throw new Error(errDetail);
-    }
 
-    return await response.json();
-  } catch (error) {
-    console.error(`API Error on ${endpoint}:`, error);
-    showToast(error.message, true);
-    throw error;
+      CURRENT_API_BASE = base; // Lock in the active working base
+      return await response.json();
+    } catch (error) {
+      lastError = error;
+      if (error.name === "TypeError" || (error.message && (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")))) {
+        continue; // Try next candidate base
+      }
+      break;
+    }
   }
+
+  console.error(`API Error on ${endpoint}:`, lastError);
+  throw lastError;
 }
 
 /** Show temporary toast message */

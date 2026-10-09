@@ -54,6 +54,10 @@ def extract_from_url(url: str) -> Dict[str, Any]:
     """
     from urllib.parse import urlparse, unquote
 
+    url = url.strip()
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+
     result = {
         "name": "",
         "brand": "",
@@ -67,6 +71,7 @@ def extract_from_url(url: str) -> Dict[str, Any]:
         "raw_text": "",
     }
 
+    soup = None
     try:
         headers = {
             "User-Agent": (
@@ -80,8 +85,13 @@ def extract_from_url(url: str) -> Dict[str, Any]:
             "Sec-Ch-Ua-Platform": '"Windows"',
             "Upgrade-Insecure-Requests": "1",
         }
-        resp = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
-        soup = BeautifulSoup(resp.content, "html.parser") if resp.status_code == 200 else None
+        resp = requests.get(url, headers=headers, timeout=8, allow_redirects=True)
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.content, "html.parser")
+    except Exception as fetch_err:
+        result["description"] = f"Direct fetch note: {str(fetch_err)}"
+
+    try:
 
         if soup:
             # 1. Product Name: Check e-commerce specific IDs first
